@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verb + -er Adventure</title>
+<style>
+:root{--ink:#10285c;--sea:#bfe6f7;--sun:#ffb62e;--orange:#f08a24;--teal:#16a39a;--blue:#2f6fd6;--paper:#fff9ea;--ok:#1fa85a;--bad:#e0453a}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Trebuchet MS","Segoe UI",Arial,sans-serif;color:var(--ink);background:linear-gradient(180deg,#d9f1fb 0%,#fff3cf 100%);min-height:100vh}
+.wrap{max-width:760px;margin:0 auto;padding:14px}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.logo{font-size:2rem;font-weight:900;background:#fff;border-radius:40px;padding:4px 22px;border:4px solid var(--sea)}
+.logo b{color:var(--orange)}
+.stats{display:flex;gap:8px;align-items:center}
+.pill{background:#fff;border:3px solid var(--sea);border-radius:30px;padding:6px 14px;font-weight:800}
+button{font-family:inherit;cursor:pointer}
+.mute{border:3px solid var(--sea);background:#fff;border-radius:50%;width:44px;height:44px;font-size:1.3rem}
+.bar{height:14px;background:#fff;border-radius:10px;margin:12px 0;overflow:hidden;border:2px solid var(--sea)}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--sun));transition:width .5s}
+.card{background:var(--paper);border:4px solid var(--teal);border-radius:26px;padding:20px;margin:12px 0;box-shadow:0 6px 0 rgba(16,40,92,.12)}
+.card.o{border-color:var(--orange)}.card.b{border-color:var(--blue)}
+h1,h2,h3{margin:.2em 0}
+.tag{display:inline-block;background:var(--sea);border-radius:12px;padding:4px 12px;font-weight:800}
+.big{font-size:3.4rem;text-align:center;margin:6px 0}
+.word{font-size:2rem;font-weight:900;text-align:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{background:#fff;border:3px solid var(--sea);border-radius:16px;padding:8px 12px;font-weight:700;font-size:1.05rem}
+.chip:hover{transform:scale(1.05)}
+.btn{background:var(--orange);color:#fff;border:0;border-bottom:5px solid #b9600f;border-radius:16px;padding:12px 26px;font-size:1.15rem;font-weight:900;margin:10px 6px 0 0}
+.btn:active{transform:translateY(3px);border-bottom-width:2px}
+.btn.g{background:var(--teal);border-bottom-color:#0d6e68}
+input[type=text],textarea{width:100%;font:inherit;font-size:1.5rem;text-align:center;padding:10px;border:4px solid var(--sea);border-radius:16px;color:var(--ink);background:#fff}
+textarea{font-size:1.15rem;text-align:left;min-height:90px}
+input:focus,textarea:focus,button:focus-visible{outline:4px solid var(--sun)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.opt{background:#fff;border:4px solid var(--sea);border-radius:18px;padding:14px;font-size:1.3rem;font-weight:800;color:var(--ink)}
+.opt.right{background:#c9f3d8;border-color:var(--ok)}
+.opt.wrong{background:#ffd5d0;border-color:var(--bad)}
+.fb{min-height:32px;text-align:center;font-weight:900;font-size:1.2rem;margin-top:10px}
+.fb.ok{color:var(--ok)}.fb.no{color:var(--bad)}
+.shake{animation:sh .4s}
+@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.pop{animation:pp .5s}
+@keyframes pp{50%{transform:scale(1.06)}}
+.stars{font-size:3rem;text-align:center}
+.fall{position:fixed;top:-40px;font-size:2rem;pointer-events:none;animation:fl 2.8s linear forwards;z-index:9}
+@keyframes fl{to{transform:translateY(110vh) rotate(360deg)}}
+footer{text-align:center;font-weight:800;margin:18px 0 6px}
+.rule{font-size:1.05rem;line-height:1.7}
+.center{text-align:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div class="logo">Verb + <b>-er</b></div>
+ <div class="stats"><span class="pill">⭐ <span id="sc">0</span></span><span class="pill">🔥 <span id="st">0</span></span><button class="mute" id="mu" aria-label="Sound on or off">🔊</button></div>
+</header>
+<div class="bar"><i id="pg"></i></div>
+<main id="app"></main>
+<footer>Created by T.Badria Alfalahi ✨</footer>
+</div>
+<script>
+let ctx,muted=false,score=0,streak=0,best=0,idx=-1,name="",tries=0,locked=false,log=[];
+const $=id=>document.getElementById(id);
+function ac(){if(!ctx){try{ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(ctx&&ctx.state==="suspended")ctx.resume();return ctx}
+function tone(f,d,type="sine",delay=0,vol=.2){if(muted)return;const c=ac();if(!c)return;const t=c.currentTime+delay,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+d)}
+const sfx={
+ click:()=>tone(660,.08,"square",0,.08),
+ ok:()=>[523,659,784,1046].forEach((f,i)=>tone(f,.18,"triangle",i*.09,.22)),
+ no:()=>{tone(200,.25,"sawtooth",0,.15);tone(150,.3,"sawtooth",.15,.15)},
+ win:()=>[523,659,784,659,784,1046,1318].forEach((f,i)=>tone(f,.25,"triangle",i*.13,.25)),
+ star:()=>tone(1200,.15,"sine",0,.15)
+};
+function speak(t){if(muted||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang="en-US";u.rate=.85;speechSynthesis.speak(u)}
+function confetti(n=24){const e=["🎉","⭐","🌟","✨","🎈"];for(let i=0;i<n;i++){const s=document.createElement("span");s.className="fall";s.textContent=e[i%e.length];s.style.left=Math.random()*100+"vw";s.style.animationDelay=Math.random()*.8+"s";document.body.appendChild(s);setTimeout(()=>s.remove(),3800)}}
+$("mu").onclick=()=>{muted=!muted;$("mu").textContent=muted?"🔇":"🔊";if(muted&&window.speechSynthesis)speechSynthesis.cancel();else sfx.click()};
+
+const Q=[
+ {p:"A",t:"type",q:"farm",a:"farmer",e:"🧑‍🌾",h:"Most verbs: just add -er."},
+ {p:"A",t:"type",q:"teach",a:"teacher",e:"👩‍🏫",h:"Most verbs: just add -er."},
+ {p:"A",t:"type",q:"dive",a:"diver",e:"🤿",h:"The verb ends in e: add only -r."},
+ {p:"A",t:"type",q:"listen",a:"listener",e:"🎧",h:"Most verbs: just add -er."},
+ {p:"A",t:"type",q:"run",a:"runner",e:"🏃",h:"Short verb, consonant-vowel-consonant: double the last letter."},
+ {p:"A",t:"type",q:"write",a:"writer",e:"✍️",h:"The verb ends in e: add only -r."},
+ {p:"B",t:"pick",s:"A person who teaches is a",a:"teacher",o:["teacher","teacherr","teachor","teach"],e:"👩‍🏫"},
+ {p:"B",t:"pick",s:"A person who farms is a",a:"farmer",o:["farmer","farmor","farmerr","farm"],e:"🧑‍🌾"},
+ {p:"B",t:"pick",s:"A person who reads is a",a:"reader",o:["readder","reader","reador","readerr"],e:"📖"},
+ {p:"B",t:"pick",s:"A person who swims is a",a:"swimmer",o:["swimer","swimmor","swimmer","swimeer"],e:"🏊"},
+ {p:"C",t:"write",e:"✏️"}
+];
+const MAXPTS=6*10+4*10+20;
+
+function hud(){$("sc").textContent=score;$("st").textContent=streak;$("pg").style.width=Math.max(0,idx)/Q.length*100+"%"}
+function start(){
+ $("app").innerHTML=`<div class="card center pop"><div class="big">🧑‍🌾👩‍🏫🎧🤿✍️📖🏃🏊</div>
+ <h1>Let’s Practise!</h1><p>We add <b>-er</b> to a verb to name a person who does the action.</p>
+ <p><input type="text" id="nm" maxlength="20" placeholder="Type your name" aria-label="Your name" autocomplete="off"></p>
+ <button class="btn" onclick="go()">Start learning</button></div>`;
+ hud()
+}
+function go(){ac();name=($("nm").value||"Super Star").trim();sfx.click();speak("Hello "+name+"! Let's learn.");learn()}
+function chip(a,b,e){return `<button class="chip" onclick="sfx.click();speak('${a} ... ${b}')">${e} ${a} → <b>${b}</b></button>`}
+function learn(){
+ $("app").innerHTML=`<div class="card pop"><h2>Hello, ${name}! 👋</h2><p>Tap any word to hear it. Then play the game!</p></div>
+ <div class="card"><span class="tag">1 · Most verbs</span><p class="rule">Add <b>-er</b></p><div class="chips">${chip("farm","farmer","🧑‍🌾")}${chip("listen","listener","🎧")}${chip("teach","teacher","👩‍🏫")}</div></div>
+ <div class="card o"><span class="tag">2 · Verbs ending in e</span><p class="rule">Add <b>-r</b></p><div class="chips">${chip("dive","diver","🤿")}${chip("write","writer","✍️")}${chip("read","reader","📖")}</div></div>
+ <div class="card b"><span class="tag">3 · Short verbs ending consonant-vowel-consonant</span><p class="rule">Double the last consonant + <b>er</b></p><div class="chips">${chip("run","runner","🏃")}${chip("swim","swimmer","🏊")}</div></div>
+ <div class="center"><button class="btn g" onclick="next()">I’m ready! 🚀</button></div>`
+}
+function next(){idx++;tries=0;locked=false;sfx.click();hud();if(idx>=Q.length)return end();render()}
+function head(q){const n={A:"Complete the words",B:"Complete the sentences using the correct -er word",C:"Challenge"}[q.p];return `<span class="tag">${q.p} · ${n}</span> <span style="float:right;font-weight:800">${idx+1} / ${Q.length}</span>`}
+function render(){
+ const q=Q[idx];let h=`<div class="card pop">${head(q)}`;
+ if(q.t==="type"){
+  h+=`<div class="big">${q.e}</div><div class="word"><button class="chip" onclick="speak('${q.q}')">🔊</button> ${q.q} → ?</div>
+  <p><input type="text" id="an" placeholder="Type the -er word" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Answer"></p>
+  <div class="center"><button class="btn" id="ck" onclick="checkType()">Check ✔</button></div>`
+ }else if(q.t==="pick"){
+  const o=[...q.o].sort(()=>Math.random()-.5);
+  h+=`<div class="big">${q.e}</div><div class="word">${q.s} ______.</div><div class="opts">${o.map(x=>`<button class="opt" onclick="pick(this,'${x}')">${x}</button>`).join("")}</div>`
+ }else{
+  h+=`<div class="big">${q.e}</div><p class="rule">Write <b>one sentence</b> using “<b>teacher</b>” or “<b>farmer</b>”.</p>
+  <textarea id="an" placeholder="Example: The teacher helps the children." aria-label="Your sentence"></textarea>
+  <div class="center"><button class="btn" id="ck" onclick="checkWrite()">Check ✔</button></div>`
+ }
+ h+=`<div class="fb" id="fb" aria-live="polite"></div><div class="center" id="nx"></div></div>`;
+ $("app").innerHTML=h;
+ if(q.t==="type"){$("an").focus();$("an").addEventListener("keydown",e=>{if(e.key==="Enter")checkType()});speak(q.q)}
+ if(q.t==="pick")speak(q.s)
+}
+function good(pts,msg){
+ locked=true;score+=pts;streak++;best=Math.max(best,streak);hud();sfx.ok();
+ const f=$("fb");f.className="fb ok";f.textContent=msg+" +"+pts;
+ if(streak>0&&streak%3===0){setTimeout(()=>{sfx.star();confetti(14)},350);f.textContent+="  🔥 "+streak+" in a row!"}
+ log.push(1);nextBtn()
+}
+function bad(){streak=0;hud();sfx.no();const c=$("app").firstElementChild;c.classList.remove("shake");void c.offsetWidth;c.classList.add("shake")}
+function nextBtn(){$("nx").innerHTML=`<button class="btn g" onclick="next()">${idx===Q.length-1?"See my result 🏆":"Next ➜"}</button>`;if($("ck"))$("ck").style.display="none"}
+function reveal(ans){locked=true;log.push(0);const f=$("fb");f.className="fb no";f.innerHTML=`The answer is: <b>${ans}</b>`;speak(ans);nextBtn()}
+function checkType(){
+ if(locked)return;const q=Q[idx],v=$("an").value.trim().toLowerCase();if(!v){$("an").focus();return}
+ if(v===q.a){good(tries===0?10:5,tries===0?"Perfect! 🎉":"Good job! 👍");speak(q.a);return}
+ tries++;bad();
+ if(tries>=2)return reveal(q.a);
+ const f=$("fb");f.className="fb no";f.textContent="Not yet. Hint: "+q.h;$("an").select()
+}
+function pick(b,v){
+ if(locked)return;const q=Q[idx];
+ if(v===q.a){b.classList.add("right");good(tries===0?10:5,tries===0?"Great! 🎉":"Good job! 👍");speak(q.s+" "+q.a);return}
+ b.classList.add("wrong");b.disabled=true;tries++;bad();
+ if(tries>=2){document.querySelectorAll(".opt").forEach(x=>{if(x.textContent===q.a)x.classList.add("right")});reveal(q.a);return}
+ const f=$("fb");f.className="fb no";f.textContent="Try again! Check the spelling."
+}
+function checkWrite(){
+ if(locked)return;const raw=$("an").value.trim(),f=$("fb");
+ const hasW=/\b(teacher|farmer)\b/i.test(raw),cap=/^[A-Z]/.test(raw),end=/[.!?]$/.test(raw),len=raw.split(/\s+/).filter(Boolean).length>=4;
+ const pts=(hasW?8:0)+(cap?4:0)+(end?4:0)+(len?4:0);
+ if(!hasW){streak=0;hud();sfx.no();f.className="fb no";f.textContent="Use the word “teacher” or “farmer” in your sentence.";tries++;if(tries>=2){locked=true;log.push(0);f.innerHTML="Example: <b>The farmer grows fresh vegetables.</b>";speak("The farmer grows fresh vegetables.");nextBtn()}return}
+ const tips=[];if(!cap)tips.push("start with a capital letter");if(!end)tips.push("finish with a full stop");if(!len)tips.push("write at least 4 words");
+ locked=true;score+=pts;hud();
+ if(pts===20){streak++;sfx.ok();f.className="fb ok";f.textContent="Wonderful sentence! +20";log.push(1)}
+ else{sfx.ok();f.className="fb ok";f.textContent=`Nice! +${pts}. Next time: ${tips.join(", ")}.`;log.push(pts>=12?1:0)}
+ speak(raw);nextBtn()
+}
+function end(){
+ hud();$("pg").style.width="100%";const pc=Math.round(score/MAXPTS*100),st=pc>=85?3:pc>=60?2:pc>=30?1:0;
+ const msg=["Keep practising — you can do it! 💪","Good start! Try again for more stars.","Great work! Almost perfect!","Amazing! You are an -er expert!"][st];
+ sfx.win();confetti(40);speak("Well done "+name+"! Your score is "+score+" out of "+MAXPTS);
+ $("app").innerHTML=`<div class="card center pop"><h1>Well done, ${name}! 🏆</h1>
+ <div class="stars">${"⭐".repeat(st)}${"☆".repeat(3-st)}</div>
+ <h2>${score} / ${MAXPTS} points (${pc}%)</h2>
+ <p>Correct answers: <b>${log.filter(Boolean).length}</b> / ${Q.length} &nbsp;·&nbsp; Best streak: <b>🔥 ${best}</b></p>
+ <p class="rule">${msg}</p>
+ <button class="btn" onclick="again()">Play again 🔄</button><button class="btn g" onclick="idx=-1;learn()">Review rules 📘</button></div>`
+}
+function again(){score=0;streak=0;best=0;idx=-1;log=[];sfx.click();hud();learn()}
+start();
+</script>
+</body>
+</html>
